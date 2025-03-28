@@ -1,30 +1,39 @@
 import { load } from "@std/dotenv";
 import { DOMParser } from "../deps.ts";
 import DBService from "./db.service.ts";
+import { TPayload } from "./telegram.service.ts";
 
 class RateService {
   private url = "https://www.alfabank.by/exchange/digital/";
   private db: DBService;
   private isMock = true;
-  private mockRates = {
-    buyRate: 3.0700,
-    sellRate: 3.1220,
-    time: new Date().toISOString(),
-  };
+  private getMockRates() {
+    const buy = 2 + Math.random() * 2;
+    const sell = buy + Math.random() * (4 - buy);
+    return {
+      id: 1,
+      buy_rate: Number(buy.toFixed(4)),
+      sell_rate: Number(sell.toFixed(4)),
+      created_at: new Date(),
+    };
+  }
 
   constructor() {
     this.db = new DBService();
   }
 
-  async fetchRates() {
+  async fetchRates(): Promise<TPayload> {
     const env = await load();
     const apiKey = env["apiKey"];
+    const prevCourse = await this.db.getLatestRate();
+
     if (this.isMock) {
+      const current = this.getMockRates();
       this.db.insertExchangeCourse(
-        this.mockRates.buyRate,
-        this.mockRates.sellRate,
+        current.buy_rate,
+        current.sell_rate,
       );
-      return this.mockRates;
+      return { current, prev: prevCourse };
     }
     try {
       const resp = await fetch(
@@ -44,9 +53,9 @@ class RateService {
 
       const data = await resp.json();
       const html = data.content;
-      const prices = this.parseExchangeRates(html);
-      this.db.insertExchangeCourse(prices.sellRate, prices.buyRate);
-      return prices;
+      const prices = this.parseExchangeRates(html) as any;
+      this.db.insertExchangeCourse(prices.sell_rate, prices.buy_rate);
+      return { prev: prevCourse, current: prices };
     } catch (error) {
       console.error("Error fetching rates:", error);
       throw error;
@@ -67,8 +76,8 @@ class RateService {
     }
 
     return {
-      sellRate: +sellElement.textContent.trim(),
-      buyRate: +buyElement.textContent.trim(),
+      sell_rate: +sellElement.textContent.trim(),
+      buy_rate: +buyElement.textContent.trim(),
     };
   }
 }

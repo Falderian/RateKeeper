@@ -1,7 +1,7 @@
 import { load } from "@std/dotenv";
 import { Pool, PoolClient } from "../deps.ts";
 
-interface ExchangeRate {
+export interface ExchangeRate {
   id: number;
   sell_rate: number;
   buy_rate: number;
@@ -48,12 +48,21 @@ class DBService {
     return result.rows;
   };
 
-  getLatestRate = async (): Promise<ExchangeRate | null> => {
+  getLatestRate = async (): Promise<ExchangeRate> => {
     if (!this.pool) throw new Error("Database connection not initialized");
-    const result = await this.pool.queryObject<ExchangeRate>(
-      "SELECT * FROM exchange_rates ORDER BY created_at DESC LIMIT 1",
-    );
-    return result.rows[0] || null;
+
+    const result = await this.pool.queryObject<ExchangeRate>`
+      SELECT 
+        id,
+        CAST(buy_rate AS NUMERIC) AS buy_rate,
+        CAST(sell_rate AS NUMERIC) AS sell_rate,
+        created_at
+      FROM exchange_rates 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    return result.rows[0];
   };
 }
 
