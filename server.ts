@@ -1,9 +1,10 @@
+import EmailService from "./services/telegram.service.ts";
 import rateService from "./services/rate.service.ts";
 
 Deno.serve(async (_req) => {
   try {
     const rates = await rateService.fetchRates();
-
+    new EmailService().sendExchangeCourse(rates);
     return new Response(JSON.stringify(rates), {
       headers: {
         "Content-Type": "application/json",
@@ -21,7 +22,7 @@ Deno.serve(async (_req) => {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 });

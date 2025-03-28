@@ -9,8 +9,7 @@ class RateService {
   private mockRates = {
     buyRate: 3.0700,
     sellRate: 3.1220,
-    lastUpdated: new Date().toISOString(),
-    isMock: true,
+    time: new Date().toISOString(),
   };
 
   constructor() {
@@ -46,7 +45,7 @@ class RateService {
       const data = await resp.json();
       const html = data.content;
       const prices = this.parseExchangeRates(html);
-      this.db.insertExchangeCourse(prices[0], prices[1]);
+      this.db.insertExchangeCourse(prices.sellRate, prices.buyRate);
       return prices;
     } catch (error) {
       console.error("Error fetching rates:", error);
@@ -67,9 +66,10 @@ class RateService {
       throw new Error("Could not find price elements in the HTML");
     }
 
-    return [buyElement.textContent.trim(), sellElement.textContent.trim()].map(
-      Number,
-    );
+    return {
+      sellRate: +sellElement.textContent.trim(),
+      buyRate: +buyElement.textContent.trim(),
+    };
   }
 }
 
