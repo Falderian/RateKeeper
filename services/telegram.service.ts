@@ -6,50 +6,41 @@ export type TPayload = { prev: ExchangeRate; current: ExchangeRate };
 const formatCurrency = (value: number) => value.toFixed(2).replace(".", ",");
 
 class TelegramService {
-  private getArrow(change: number) {
-    return change > 0 ? "▲" : change < 0 ? "▼" : "▬";
-  }
-
   private buildMessage(prev: ExchangeRate, current: ExchangeRate) {
-    const buyChange = current.buy_rate - +prev.buy_rate;
-    const sellChange = current.sell_rate - +prev.sell_rate;
+    const buyChange = current.buy_rate - prev.buy_rate;
+    const trend = buyChange > 0
+      ? "📈 Растёт"
+      : buyChange < 0
+      ? "📉 Падает"
+      : "➖ Стабильно";
 
     return `
-🔄 *ОБНОВЛЕНИЕ КУРСА ВАЛЮТ* 🔄
-
-📅 Дата: ${new Date().toLocaleDateString("ru-RU")}
-⏰ Время: ${
+🕒 ${
       new Date().toLocaleTimeString("ru-RU", {
         hour: "2-digit",
         minute: "2-digit",
       })
     }
 
-━━━━━━━━━━━━━━━━━━
-💵 *ТЕКУЩИЙ КУРС*
-├ Покупка: ${formatCurrency(current.buy_rate)} ₽ ${this.getArrow(buyChange)}
-└ Продажа: ${formatCurrency(current.sell_rate)} ₽ ${this.getArrow(sellChange)}
+${trend}
+Текущий курс: ${formatCurrency(current.buy_rate)} ₽
+Изменение: ${formatCurrency(buyChange)} (${
+      (Math.abs(buyChange) / prev.buy_rate * 100).toFixed(1)
+    }%)
 
-━━━━━━━━━━━━━━━━━━
-📈 *ИЗМЕНЕНИЯ ЗА ПЕРИОД*
-├ Покупка: ${buyChange >= 0 ? "+" : ""}${formatCurrency(buyChange)}
-│   Было: ${formatCurrency(+prev.buy_rate)}
-└ Продажа: ${sellChange >= 0 ? "+" : ""}${formatCurrency(sellChange)}
-    Было: ${formatCurrency(+prev.sell_rate)}
-
-━━━━━━━━━━━━━━━━━━
-💡 *РЕКОМЕНДАЦИЯ*
-${this.getRecommendation(buyChange, sellChange)}
+${this.getBuyRecommendation(buyChange)}
     `.trim();
   }
 
-  private getRecommendation(buyChange: number, sellChange: number) {
-    if (buyChange > 0.5) return "▶️ Выгодно покупать сейчас";
-    if (sellChange < -0.3) return "⏏️ Рекомендуем продавать";
-    return "⏸️ Сохраняйте текущую позицию";
+  private getBuyRecommendation(change: number) {
+    if (change < -0.5) return "✅ Идеальный момент для покупки!";
+    if (change < -0.2) return "👍 Хорошая возможность купить";
+    if (change > 0.3) return "⏳ Лучше подождать снижения";
+    return "🔄 Нейтральная ситуация";
   }
 
-  sendExchangeCourse = async ({ prev, current }: TPayload) => {
+  // Исправленный метод отправки
+  async sendExchangeCourse({ prev, current }: TPayload) {
     const env = await load();
     const { tgKey, tgChatId } = env;
 
@@ -65,13 +56,12 @@ ${this.getRecommendation(buyChange, sellChange)}
           }),
         },
       );
-
       return await response.json();
     } catch (error) {
       console.error("Ошибка отправки:", error);
       return { ok: false };
     }
-  };
+  }
 }
 
 export default TelegramService;

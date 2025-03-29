@@ -6,8 +6,9 @@ import TelegramService, { TPayload } from "./telegram.service.ts";
 class RateService {
   private url = "https://www.alfabank.by/exchange/digital/";
   private db: DBService;
-  private isMock = true;
-  private getMockRates() {
+  private isMock = false;
+
+  private getMockRates = () => {
     const buy = 2 + Math.random() * 2;
     const sell = buy + Math.random() * (4 - buy);
     return {
@@ -16,13 +17,13 @@ class RateService {
       sell_rate: Number(sell.toFixed(4)),
       created_at: new Date(),
     };
-  }
+  };
 
   constructor() {
     this.db = new DBService();
   }
 
-  async fetchRates(): Promise<TPayload> {
+  fetchRates = async (): Promise<TPayload> => {
     const env = await load();
     const apiKey = env["apiKey"];
     const prevCourse = await this.db.getLatestRate();
@@ -60,7 +61,7 @@ class RateService {
       console.error("Error fetching rates:", error);
       throw error;
     }
-  }
+  };
 
   refreshRates = async () => {
     try {
@@ -88,7 +89,7 @@ class RateService {
     }
   };
 
-  private parseExchangeRates(html: string) {
+  private parseExchangeRates = (html: string) => {
     const doc = new DOMParser().parseFromString(html, "text/html");
     if (!doc) throw new Error("Failed to parse HTML");
 
@@ -105,7 +106,7 @@ class RateService {
       sell_rate: +sellElement.textContent.trim(),
       buy_rate: +buyElement.textContent.trim(),
     };
-  }
+  };
 }
 
-export default new RateService();
+export default RateService;
