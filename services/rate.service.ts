@@ -1,7 +1,7 @@
 import { load } from "@std/dotenv";
 import { DOMParser } from "../deps.ts";
 import DBService from "./db.service.ts";
-import { TPayload } from "./telegram.service.ts";
+import TelegramService, { TPayload } from "./telegram.service.ts";
 
 class RateService {
   private url = "https://www.alfabank.by/exchange/digital/";
@@ -61,6 +61,32 @@ class RateService {
       throw error;
     }
   }
+
+  refreshRates = async () => {
+    try {
+      const rates = await this.fetchRates();
+      new TelegramService().sendExchangeCourse(rates);
+      return new Response(JSON.stringify(rates), {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to fetch rates",
+          details: error,
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+  };
 
   private parseExchangeRates(html: string) {
     const doc = new DOMParser().parseFromString(html, "text/html");
