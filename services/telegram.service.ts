@@ -7,10 +7,10 @@ const formatCurrency = (value: number) => value.toFixed(2).replace(".", ",");
 
 class TelegramService {
   private buildMessage(prev: ExchangeRate, current: ExchangeRate) {
-    const buyChange = current.buy_rate - prev.buy_rate;
-    const trend = buyChange > 0
+    const sellChange = current.sell_rate - prev.sell_rate;
+    const trend = sellChange > 0
       ? "📈 Растёт"
-      : buyChange < 0
+      : sellChange < 0
       ? "📉 Падает"
       : "➖ Стабильно";
 
@@ -23,12 +23,12 @@ class TelegramService {
     }
 
 ${trend}
-Текущий курс: ${formatCurrency(current.buy_rate)} ₽
-Изменение: ${formatCurrency(buyChange)} (${
-      (Math.abs(buyChange) / prev.buy_rate * 100).toFixed(1)
+Текущий курс: ${formatCurrency(current.sell_rate)} ₽
+Изменение: ${formatCurrency(sellChange)} (${
+      (Math.abs(sellChange) / prev.sell_rate * 100).toFixed(1)
     }%)
 
-${this.getBuyRecommendation(buyChange)}
+${this.getBuyRecommendation(sellChange)}
     `.trim();
   }
 

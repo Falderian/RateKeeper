@@ -27,7 +27,6 @@ class RateService {
     const env = await load();
     const apiKey = env["apiKey"];
     const prevCourse = await this.db.getLatestRate();
-
     if (this.isMock) {
       const current = this.getMockRates();
       this.db.insertExchangeCourse(
